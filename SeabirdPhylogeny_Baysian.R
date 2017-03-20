@@ -18,7 +18,7 @@ pal.orange <- c("#FFE3C3", "#FFCF98", "#FFBD73", "#ECA14D", "#D78223")
 pal.red    <- c("#FFCEC3", "#FFAC98", "#FF8E73", "#EC6C4D", "#D74523")
 
 
-data <- read.csv("C:/Users/RuthDunn/Dropbox/PhD/Project/Breeding Energetics - Meta Analysis/Breeding_FMR_Physiology.csv")
+data <- read.csv("C:/Users/RuthDunn/Dropbox/PhD/Project/Breeding Energetics - Meta Analysis/Data/Breeding_FMR_Physiology.csv")
 
 data$animal <- as.character(data$animal)
 data$Latitude <- abs(data$Latitude)
@@ -32,9 +32,9 @@ library(ape)
 library(car)
 library(RODBC)
 library(rncl)
+library(phytools)
 
-
-
+# install.packages(c("MCMCglmm", "car", "RODBC", "phytools"))
 
 
       # model_simple <- MCMCglmm(phen ~ cofactor,
@@ -69,8 +69,10 @@ m2.1 <- lm(log_FMR ~ log_FMR_Mass + Phase +  Latitude + log_Colony + Average_Bro
 # Plots of FMR against each variables, taking into account the effect of the other variables
 avPlots(m2.1)
 
-
-
+reg1 <- lm(data$log_FMR~data$Phase)
+plot(data$log_FMR,data$Phase)
+abline(reg1)
+summary(reg1)
 
 ###
 ### Select species to be included within phylogeny analysis
@@ -86,20 +88,25 @@ avPlots(m2.1)
 download.tree <- TRUE
 
 # Use seabirds ott_ids (Open Tree Taxonomy identifier) to match and extract seabirds from the Open Tree tree
-seabirds <- read.csv("SeabirdSpecies.csv")
+seabirds <- read.csv("C:/Users/RuthDunn/Dropbox/PhD/Project/Breeding Energetics - Meta Analysis/SeabirdSpecies.csv")
 seabirds$animal <- as.character(seabirds$animal)
-# str(data)
+
+# Try to load all seabird species
+# resolved_names <- tnrs_match_names(data$animal)
+# resolved_names <- tnrs_match_names(seabirds$animal)
+# Error: "Queries containing more than 250 strings are not supported.
+# You may submit multiplesmaller queries to avoid this limit"
+
+# Try mutliple smaller queries:
 resolved_names1 <- tnrs_match_names(head(seabirds$animal,250))
 resolved_names2 <- tnrs_match_names(tail(seabirds$animal,101))
 resolved_names3 <- tnrs_match_names(data$animal)
-resolved_names <- rbind(resolved_names1, resolved_names2,resolved_names3)
+resolved_names <- rbind(resolved_names1, resolved_names2)
 
-# resolved_names <- tnrs_match_names(c(data$animal,seabirds$animal))
 # Get the tree with just those tips:
 tr <- tol_induced_subtree(ott_ids=ott_id(resolved_names))
 
 # Open Tree trees have no branch lengths but MCMCglmm accepts topology as input
-
 taxon_map <- structure (resolved_names$search_string, names = resolved_names$unique_name)
 
 # Tree contains ID numbers which don't therefore match our data
@@ -110,19 +117,22 @@ tr$tip.label <- taxon_map[ otl_tips ]
 # Remove node labels by setting node.label to null
 tr$node.label <- NULL
 
-par(mfrow = c(1,1), mar = rep(0,4))
-plot(tr, cex = 0.3)
-
 write.tree(tr, "downloaded tree.phy")
+
+par(mfrow = c(1,1), mar = rep(0,4))
+plot(tr, cex = 0.3, type = "fan")
+
+library(ggplot2)
+# source('http://bioconductor.org/biocLite.R')
+# biocLite('phyloseq')
+library(phyloseq)
+plot_tree(tr, label.tips = "taxa_names", ladderize="left", text.size = 4) + 
+  coord_polar(theta="y")
+
 
 ##
 ## Run Models
 ##
-
-# your_data$dam<-factor(your_data$dam, levels=levels(your_data$animal))
-# invA <- inverseA(tr)
-# ginverse=list(animal=invA, dam=invA)
-summary(data$animal)
 
 # Run full models
 
@@ -133,10 +143,52 @@ model2.2<- MCMCglmm( log_FMR ~ log_FMR_Mass + Phase + Latitude + log_Colony + Av
                      nodes="TIPS", scale=F,
                      data = data,  prior = prior, burnin = 300000/5, nitt = 1300000/5,
                      thin = 1000/5, verbose = T)
+# Error: "some levels of animal do not have a row entry in ginverse"
 
-plot(model2.2)
+# Try and fix!
+ invA <- inverseA(tr)
+ ginverse=list(animal=invA, resolved_names=invA)
+ print(ginverse$resolved_names)
+
+# Re-try model
+model2.2<- MCMCglmm( log_FMR ~ log_FMR_Mass + Phase + Latitude + log_Colony + Average_Brood,
+                     random =~animal, ginverse=list(animal=invA,resolved_names = invA),
+                     pedigree = tr,
+                     pr = TRUE,
+                     nodes="TIPS", scale=F,
+                     data = data,  prior = prior, burnin = 300000/5, nitt = 1300000/5,
+                     thin = 1000/5, verbose = T)
+# New error: "animal ginverse appears but pedigree has been passed"
+#
+# Great.
+#
+
+#
+#
+#
+# Just use our included sp. right now
+
+resolved_names <- tnrs_match_names(data$animal)
+tr <- tol_induced_subtree(ott_ids=ott_id(resolved_names))
+taxon_map <- structure (resolved_names$search_string, names = resolved_names$unique_name)
+otl_tips <- strip_ott_ids(tr$tip.label, remove_underscores=TRUE)
+tr$tip.label <- taxon_map[ otl_tips ]
+tr$node.label <- NULL
+
+# Run models
+
+model2.2<- MCMCglmm( log_FMR ~ log_FMR_Mass + Phase + Latitude + log_Colony + Average_Brood,
+                     random =~animal,
+                     pedigree = tr,
+                     pr = TRUE,
+                     nodes="TIPS", scale=F,
+                     data = data,  prior = prior, burnin = 300000/5, nitt = 1300000/5,
+                     thin = 1000/5, verbose = T)
+
 summary(model2.2)
-print(tr$tip.label)
+plot(model2.2)
+
+# Remove non-significant log_Colony
 
 model2.3<- MCMCglmm( log_FMR ~ log_FMR_Mass + Phase + Latitude + Average_Brood,
                      random = ~animal,
@@ -149,6 +201,8 @@ model2.3<- MCMCglmm( log_FMR ~ log_FMR_Mass + Phase + Latitude + Average_Brood,
 
 plot(model2.3)
 summary(model2.3)
+
+# Compare models using DIC
 
 model2.2$DIC
 model2.3$DIC
@@ -169,6 +223,8 @@ model2.4<- MCMCglmm( log_FMR ~ log_FMR_Mass + Phase + Latitude + log_Colony + Av
 
 plot(model2.4)
 summary(model2.4)
+
+# Remove log colony again
 
 model2.5<- MCMCglmm( log_FMR ~ log_FMR_Mass + Phase + Latitude + Average_Brood,
                      random = ~animal + Latin_Name,
