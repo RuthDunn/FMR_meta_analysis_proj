@@ -52,8 +52,8 @@ library(ggplot2)
 download.tree <- TRUE
 
 # Use seabirds ott_ids (Open Tree Taxonomy identifier) to match and extract seabirds from the Open Tree tree
-seabirds <- read.csv("C:/Users/RuthDunn/Dropbox/PhD/Project/Breeding Energetics - Meta Analysis/Data/SeabirdSpecies.csv")
-seabirds$animal <- as.character(seabirds$animal)
+# seabirds <- read.csv("C:/Users/RuthDunn/Dropbox/PhD/Project/Breeding Energetics - Meta Analysis/Data/SeabirdSpecies.csv")
+# seabirds$animal <- as.character(seabirds$animal)
 
 # Try to load all seabird species
 # resolved_names <- tnrs_match_names(data$animal)
@@ -147,7 +147,7 @@ library(cowplot)
 
 
 
-tr_sponly <- groupClade(tr_sponly, node = c(47, 54, 59, 64, 63, 67, 69, 74, 75))
+tr_sponly <- groupClade(tr_sponly, node = c(47, 54, 56, 59, 64, 63, 67, 69, 74, 75))
 
 p <- ggtree(tr_sponly, color = pal.green, aes(size = 4), layout = "circular", branch.length = "none") +
   geom_tippoint(size = 6, alpha = 1/4, aes(color = group)) +
@@ -170,8 +170,8 @@ p <- p +
 p
 
 
-ggsave("C:/Users/RuthDunn/Dropbox/PhD/Project/Breeding Energetics - Meta Analysis/Outputs/Phylo_Plot_names.png", bg = "transparent",
-    width = 30, height = 30, units= "cm")
+# ggsave("C:/Users/RuthDunn/Dropbox/PhD/Project/Breeding Energetics - Meta Analysis/Outputs/Phylo_Plot_names.png", bg = "transparent",
+#     width = 30, height = 30, units= "cm")
 
 
 
