@@ -17,11 +17,12 @@ pal.orange <- c("#FFE3C3", "#FFCF98", "#FFBD73", "#ECA14D", "#D78223")
 # Complement color:
 pal.red    <- c("#FFCEC3", "#FFAC98", "#FF8E73", "#EC6C4D", "#D74523")
 
-
-data <- read.csv("C:/Users/RuthDunn/Dropbox/PhD/Project/Breeding Energetics - Meta Analysis/Data/Breeding_FMR_Physiology.csv")
+# prev.data <- read.csv("C:/Users/RuthDunn/Dropbox/PhD/Project/Breeding Energetics - Meta Analysis/Data/Breeding_FMR_Physiology.csv")
+data <- read.csv("C:/Users/RuthDunn/Dropbox/PhD/Project/Breeding Energetics - Meta Analysis/Data/Breeding_FMR_Physiology_2.csv")
 
 data$animal <- as.character(data$animal)
 data$Latitude <- abs(data$Latitude)
+data$Colony <- as.numeric(data$Colony)
 data$log_Colony <- log10(data$Colony)
 
 library(rotl)
@@ -32,6 +33,7 @@ library(ape)
 library(car)
 library(RODBC)
 library(rncl)
+library(tidyr)
 library(phytools)
 
 # install.packages(c("MCMCglmm", "car", "RODBC", "phytools"))
@@ -46,10 +48,20 @@ library(phytools)
 prior <- list(G = list(G1 = list(V = 1, nu = 0.001)),    # Random effect
             R = list(V = 1, nu = 0.001))                 # Fixed effect
 
+# Remove rows where FMR = na
+# Should remove this when dataset is complete
+#data <- data[!is.na(c(data$FMR, data$log_Colony, data$log_Mass, data$Phase, data$Latitude, data$Average_Brood)),]
+
+
+# data %>% drop_na(data$Mass_g)
+# data$log_Mass
+# is.na(data$log_Mass)
+data_naomit <- na.omit(data)
+
 # Model without phylogeny effect
-model2.1<- MCMCglmm( log_FMR ~ log_FMR_Mass + Phase +  Latitude + log_Colony + Average_Brood,
+model2.1<- MCMCglmm( log_FMR ~ log_Mass + Phase +  Latitude + log_Colony + Average_Brood,
                      random =~animal,
-                     data = data,  prior = prior, 
+                     data = data_naomit,  prior = prior, 
                      burnin = 10000, nitt = 100000, thin = 200, verbose = T)
 
 # Nitt = Total number of runs > 10,000
@@ -63,16 +75,16 @@ plot(model2.1)
 
 
 # Linear model of FMR and variables
-m2.1 <- lm(log_FMR ~ log_FMR_Mass + Phase +  Latitude + log_Colony + Average_Brood, 
+m2.1 <- lm(log_FMR ~ log_Mass + Phase +  Latitude + log_Colony + Average_Brood, 
            data = data, na.action = na.omit)
 
 # Plots of FMR against each variables, taking into account the effect of the other variables
 avPlots(m2.1)
 
-reg1 <- lm(data$log_FMR~data$Phase)
-plot(data$log_FMR,data$Phase)
-abline(reg1)
-summary(reg1)
+# reg1 <- lm(data$log_FMR~data$Phase)
+# plot(data$log_FMR,data$Phase)
+# abline(reg1)
+# summary(reg1)
 
 ###
 ### Select species to be included within phylogeny analysis
@@ -88,7 +100,7 @@ summary(reg1)
 download.tree <- TRUE
 
 # Use seabirds ott_ids (Open Tree Taxonomy identifier) to match and extract seabirds from the Open Tree tree
-seabirds <- read.csv("C:/Users/RuthDunn/Dropbox/PhD/Project/Breeding Energetics - Meta Analysis/SeabirdSpecies.csv")
+seabirds <- read.csv("C:/Users/RuthDunn/Dropbox/PhD/Project/Breeding Energetics - Meta Analysis/Data/SeabirdSpecies.csv")
 seabirds$animal <- as.character(seabirds$animal)
 
 # Try to load all seabird species
@@ -101,13 +113,13 @@ seabirds$animal <- as.character(seabirds$animal)
 resolved_names1 <- tnrs_match_names(head(seabirds$animal,250))
 resolved_names2 <- tnrs_match_names(tail(seabirds$animal,101))
 resolved_names3 <- tnrs_match_names(data$animal)
-resolved_names <- rbind(resolved_names1, resolved_names2)
+resolved_names.all <- rbind(resolved_names1, resolved_names2, resolved_names3)
 
 # Get the tree with just those tips:
-tr <- tol_induced_subtree(ott_ids=ott_id(resolved_names))
+tr <- tol_induced_subtree(ott_ids=ott_id(resolved_names.all))
 
 # Open Tree trees have no branch lengths but MCMCglmm accepts topology as input
-taxon_map <- structure (resolved_names$search_string, names = resolved_names$unique_name)
+taxon_map <- structure (resolved_names.all$search_string, names = resolved_names.all$unique_name)
 
 # Tree contains ID numbers which don't therefore match our data
 # Use function to remove extra info at label tips
@@ -119,15 +131,9 @@ tr$node.label <- NULL
 
 write.tree(tr, "downloaded tree.phy")
 
-par(mfrow = c(1,1), mar = rep(0,4))
-plot(tr, cex = 0.3, type = "fan")
+# par(mfrow = c(1,1), mar = rep(0,4))
+# plot(tr, cex = 0.3, type = "fan")
 
-library(ggplot2)
-# source('http://bioconductor.org/biocLite.R')
-# biocLite('phyloseq')
-library(phyloseq)
-plot_tree(tr, label.tips = "taxa_names", ladderize="left", text.size = 4) + 
-  coord_polar(theta="y")
 
 
 ##
@@ -174,10 +180,11 @@ taxon_map <- structure (resolved_names$search_string, names = resolved_names$uni
 otl_tips <- strip_ott_ids(tr$tip.label, remove_underscores=TRUE)
 tr$tip.label <- taxon_map[ otl_tips ]
 tr$node.label <- NULL
+data$Colony <- as.numeric(data$Colony)
+data$log_Colony <- log10(data$Colony)
 
-# Run models
 
-model2.2<- MCMCglmm( log_FMR ~ log_FMR_Mass + Phase + Latitude + log_Colony + Average_Brood,
+model2.2<- MCMCglmm( log_FMR ~ log_FMR_Mass + Phase + Latitude + Colony_explicit + Average_Brood,
                      random =~animal,
                      pedigree = tr,
                      pr = TRUE,
@@ -185,8 +192,41 @@ model2.2<- MCMCglmm( log_FMR ~ log_FMR_Mass + Phase + Latitude + log_Colony + Av
                      data = data,  prior = prior, burnin = 300000/5, nitt = 1300000/5,
                      thin = 1000/5, verbose = T)
 
+# New data not working either...
+
+# Try with old data
+data.old <- read.csv("C:/Users/RuthDunn/Dropbox/PhD/Project/Breeding Energetics - Meta Analysis/Data/Breeding_FMR_Physiology.csv")
+data.old$animal <- as.character(data.old$animal)
+resolved_names <- tnrs_match_names(data.old$animal)
+tr <- tol_induced_subtree(ott_ids=ott_id(resolved_names))
+taxon_map <- structure (resolved_names$search_string, names = resolved_names$unique_name)
+otl_tips <- strip_ott_ids(tr$tip.label, remove_underscores=TRUE)
+tr$tip.label <- taxon_map[ otl_tips ]
+tr$node.label <- NULL
+data.old$Colony <- as.numeric(data.old$Colony)
+data.old$log_Colony <- log10(data.old$Colony)
+
+
+model2.2<- MCMCglmm( log_FMR ~ log_FMR_Mass + Phase + Latitude + log_Colony + Average_Brood,
+                     random =~animal,
+                     pedigree = tr,
+                     pr = TRUE,
+                     nodes="TIPS", scale=F,
+                     data = data.old,  prior = prior, burnin = 300000/5, nitt = 1300000/5,
+                     thin = 1000/5, verbose = T)
+
 summary(model2.2)
 plot(model2.2)
+
+# Locate differences in new data and old data
+data$animal[!(data$animal %in% data.old$animal)]
+# Locate differences in resolved names and new data
+# (Stuff that's in data$animal, but not unambiguous_names)
+data$animal[!(data$animal %in% tr$tip.label)]
+
+resolved_names.all$unambiguous_names
+resolved_names.all$matched_names
+attr(resolved_names.all, "original_response")
 
 # Remove non-significant log_Colony
 
@@ -201,6 +241,7 @@ model2.3<- MCMCglmm( log_FMR ~ log_FMR_Mass + Phase + Latitude + Average_Brood,
 
 plot(model2.3)
 summary(model2.3)
+
 
 # Compare models using DIC
 
