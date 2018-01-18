@@ -119,8 +119,9 @@ pal.green   <- ("#EBEBFF")
 pal.orange    <- ("#FC9428")
 
 library(ggplot2)
-library(phyloseq)
 library(ggtree)
+
+library(phyloseq)
 library(colorspace)
 library(Cairo)
 library(png)
