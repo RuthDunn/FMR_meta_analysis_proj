@@ -7,7 +7,7 @@ rm(list = ls(all = TRUE))
 library(ape)
 
 # Load 346 seabird species:
-# (minus ducks, grebes, loons and phalaropes = 319 sp)
+# (minus ducks, grebes, loons and phalaropes = 317 sp)
 
 seabirds <- read.csv("C:/Users/RuthDunn/Dropbox/PhD/Project/Breeding Energetics - Meta Analysis/Data/SeabirdSpecies.csv")
 seabirds$animal <- as.character(seabirds$animal)
@@ -24,4 +24,4 @@ seabird.tree<-drop.tip(sptree, setdiff(sptree$tip.label, seabirds$animal))
 
 # Write tree
 
-write.tree(seabird.tree, "C:/Users/RuthDunn/Dropbox/PhD/Project/Breeding Energetics - Meta Analysis/Data/bird tree seabird tree.phy")
+write.tree(seabird.tree, "C:/Users/RuthDunn/Dropbox/PhD/Project/Breeding Energetics - Meta Analysis/Data/bird tree seabird tree2.phy")
