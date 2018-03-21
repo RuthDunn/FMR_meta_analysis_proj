@@ -277,7 +277,8 @@ model1.8$DIC
 load(file = "C:/Users/RuthDunn/Dropbox/PhD/Project/Breeding Energetics - Meta Analysis/Outputs/Models/model2.1.rda")
 summary(model2.1)
 # plot(model2.1)
-
+phylo_h2 <- model2.1$VCV[,"animal"] / (model2.1$VCV[,"animal"] + model2.1$VCV[,"Sci_Name"] + model2.1$VCV[,"units"])
+summary(phylo_h2)
 
 # Begin to remove non-significant terms:
 # First edit:
@@ -299,7 +300,8 @@ summary(model2.1)
 load(file = "C:/Users/RuthDunn/Dropbox/PhD/Project/Breeding Energetics - Meta Analysis/Outputs/Models/model2.2.rda")
 summary(model2.2)
 # plot(model2.2)
-
+phylo_h2 <- model2.2$VCV[,"animal"] / (model2.2$VCV[,"animal"] + model2.2$VCV[,"Sci_Name"] + model2.2$VCV[,"units"])
+summary(phylo_h2)
 
 # Second edit:
 # (Include: Mass, Phase, Lat, Pairs)
@@ -320,7 +322,8 @@ summary(model2.2)
 load(file = "C:/Users/RuthDunn/Dropbox/PhD/Project/Breeding Energetics - Meta Analysis/Outputs/Models/model2.3.rda")
 summary(model2.3)
 # plot(model2.3)
-
+phylo_h2 <- model2.3$VCV[,"animal"] / (model2.3$VCV[,"animal"] + model2.3$VCV[,"Sci_Name"] + model2.3$VCV[,"units"])
+summary(phylo_h2)
 
 # Third edit:
 # (Include: Mass, Phase, Lat, Long)
@@ -341,7 +344,8 @@ summary(model2.3)
 load(file = "C:/Users/RuthDunn/Dropbox/PhD/Project/Breeding Energetics - Meta Analysis/Outputs/Models/model2.4.rda")
 summary(model2.4)
 # plot(model2.4)
-
+phylo_h2 <- model2.4$VCV[,"animal"] / (model2.4$VCV[,"animal"] + model2.4$VCV[,"Sci_Name"] + model2.4$VCV[,"units"])
+summary(phylo_h2)
 
 # Fourth edit:
 # (Include: Mass, Phase, Lat)
@@ -355,14 +359,15 @@ summary(model2.4)
 #                      data = data,  prior = prior<-list(G = list(G1=list(V=1,nu=0.001),
 #                                                                 G2=list(V=1,nu=0.001)),
 #                                                        R = list(V=1,nu=0.001)),
-#                      burnin = 300000/50, nitt = 1300000/50,
-#                      thin = 1000/50, verbose = T)
-# save(model2.5, file = "C:/Users/RuthDunn/Dropbox/PhD/Project/Breeding Energetics - Meta Analysis/Outputs/Models/model2.5.rda")
+#                      burnin = 300000/5, nitt = 1300000/5,
+#                      thin = 1000/5, verbose = T)
+save(model2.5, file = "C:/Users/RuthDunn/Dropbox/PhD/Project/Breeding Energetics - Meta Analysis/Outputs/Models/model2.5b.rda")
 
 load(file = "C:/Users/RuthDunn/Dropbox/PhD/Project/Breeding Energetics - Meta Analysis/Outputs/Models/model2.5.rda")
 summary(model2.5)
 # plot(model2.5)
-
+phylo_h2 <- model2.5$VCV[,"animal"] / (model2.5$VCV[,"animal"] + model2.5$VCV[,"Sci_Name"] + model2.5$VCV[,"units"])
+summary(phylo_h2)
 
 # Fifth edit:
 # (Include: Mass, Phase, Lat, Average Brood)
@@ -383,7 +388,8 @@ summary(model2.5)
 load(file = "C:/Users/RuthDunn/Dropbox/PhD/Project/Breeding Energetics - Meta Analysis/Outputs/Models/model2.6.rda")
 summary(model2.6)
 # plot(model2.6)
-
+phylo_h2 <- model2.6$VCV[,"animal"] / (model2.6$VCV[,"animal"] + model2.6$VCV[,"Sci_Name"] + model2.6$VCV[,"units"])
+summary(phylo_h2)
 
 # Sixth edit:
 # (Include: Mass, Phase, Lat, Pairs, Average Brood)
@@ -404,6 +410,8 @@ summary(model2.6)
 load(file = "C:/Users/RuthDunn/Dropbox/PhD/Project/Breeding Energetics - Meta Analysis/Outputs/Models/model2.7.rda")
 summary(model2.7) 
 # plot(model2.7)
+phylo_h2 <- model2.7$VCV[,"animal"] / (model2.7$VCV[,"animal"] + model2.7$VCV[,"Sci_Name"] + model2.7$VCV[,"units"])
+summary(phylo_h2)
 
 
 # Seventh edit:
@@ -425,37 +433,19 @@ summary(model2.7)
 load(file = "C:/Users/RuthDunn/Dropbox/PhD/Project/Breeding Energetics - Meta Analysis/Outputs/Models/model2.8.rda")
 summary(model2.8)
 # plot(model2.8)
+phylo_h2 <- model2.8$VCV[,"animal"] / (model2.8$VCV[,"animal"] + model2.8$VCV[,"Sci_Name"] + model2.8$VCV[,"units"])
+summary(phylo_h2)
 
-# Eighth edit:
-# (Include: Mass, Lat)
-# (Remove: Phase, Pairs, Long, Average_Brood)
-
-# model2.9<- MCMCglmm( log_FMR ~ log_Mass + Lat,
-#                      random = ~animal + Sci_Name,
-#                      pedigree = sptree,
-#                      pr = TRUE,
-#                      nodes="TIPS", scale=F,
-#                      data = data,  prior = prior<-list(G = list(G1=list(V=1,nu=0.001),
-#                                                                 G2=list(V=1,nu=0.001)),
-#                                                        R = list(V=1,nu=0.001)),
-#                      burnin = 300000/5, nitt = 1300000/5,
-#                      thin = 1000/5, verbose = T)
-# save(model2.9, file = "C:/Users/Ruth/Dropbox/PhD/Project/Breeding Energetics - Meta Analysis/Outputs/Models/model2.9.rda")
-
-load(file = "C:/Users/RuthDunn/Dropbox/PhD/Project/Breeding Energetics - Meta Analysis/Outputs/Models/model2.9.rda")
-summary(model2.9)
-# plot(model2.9)
 
 # Compare model DICs:
 
-model2.1$DIC
+model2.1$DIC     # ****
 model2.2$DIC
-model2.3$DIC     # ****
+model2.3$DIC
 model2.4$DIC
 model2.5$DIC
 model2.6$DIC
 model2.7$DIC
 model2.8$DIC
-model2.9$DIC
 
 ################################################################################
