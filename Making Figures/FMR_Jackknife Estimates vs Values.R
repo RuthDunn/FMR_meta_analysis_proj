@@ -124,8 +124,8 @@ plot <- ggplot(data, aes(x = log_FMR, y = estimate)) +
   geom_errorbar(aes(ymin = lower, ymax = upper, width = 0.01, color = Phase)) +
   scale_colour_manual(values=cbPalette[c(2, 4, 6)]) +
   # scale_shape_manual(values = c(0:4, 6, 8, 15:17)) + 
-  xlab("log FMR (True)")+
-  ylab("log FMR (Jackknife Estimate)") +
+  xlab("True log FMR Values (kJ/ day)")+
+  ylab("Jackknife Estimate log FMR Values (kJ/ day)") +
   geom_abline(linetype = 2)
 
 theme_set(hello)
