@@ -5,6 +5,9 @@ library(shiny)
 library(ape)
 library(MCMCglmm)
 library(xlsx)
+library(plyr)
+library(shinydashboard)
+library(stringr)
 
 ######################################################################
 
@@ -15,164 +18,220 @@ library(xlsx)
 
 tr <- read.tree("data/bird tree seabird tree.phy")
 sptree <- makeNodeLabel(tr, method = "number", prefix = "node")
-species_choices <- as.list(sort(sptree$tip.label))
-load(file = "data/model2.5c.rda")
-plotcols <- c("#199A4D", "#1B6787", "#D78223")
+seabirds <- read.csv("data/SeabirdSpecies.csv")
+species_choices <- as.data.frame(sort(sptree$tip.label))
+names(species_choices)[1] <- "animal"
+species_choices <- merge(species_choices, seabirds, by = "animal")
+species_choices<-species_choices[,c(1,2,4,6)]
+rm(sptree, tr, seabirds)
+
+species_choices_list <- split(species_choices$selector_caption, species_choices$Family_Common)
+
+#
+
+load(file = "data/model2.5.rda")
 
 #####################################################################
+#####################################################################
 
-# Add elements to app:
-# Input functions
+# Build User interface
 
-ui <- fluidPage(
+# Input functions:
 
-    titlePanel("Seabird FMR Calculator"),
-                
-    sidebarPanel(
-      
-      h4("Model Inputs"),
-      
-      p("Enter model inputs below and then click",
-        strong("Update View"),
-        "to calculate FMR estimates."),
-      
-      selectInput("species", label = "Select Species",
-                  choices = species_choices),
-      
-      sliderInput("lat", label = "Colony Latitude (north/ south)",
-                  min = 0, max = 90, value = 50),
-      
-      numericInput("mass", label = "Mean Bird Mass (g)",
+ui <- dashboardPage(
+  
+  skin = "black",
+  
+  dashboardHeader(title = "Seabird FMR Calculator",
+                  titleWidth = 300),
+  
+  dashboardSidebar(disable = TRUE),
+  
+  dashboardBody(
+    
+          fluidRow(
+            
+            # Box 1 - Title, Authors & Info
+            
+            box(width = 4,
+            background = "light-blue",
+            status = "primary",
+            
+            h3("A Model to Estimate Field Metabolic Rate in Seabirds"),
+            
+            h5("Dunn, R.E., White, C.R., Green, J.A."),
+            
+            p("The",
+            strong("Seabird FMR Calculator"),
+            "is the output of a series of phylogenetically-controlled meta-analytic mixed 
+      effects models. These models incoorporate easily obtainable 
+      ecological and physiological parameters in order to make predictions 
+      of field metabolic rate (FMR) during the breeding season for seabird species
+      of different masses, breeding at different colony latitudes, at different
+      stages of the breeding season.")),
+            
+            # Box 2 - Selecting Model Inputs
+            
+            box(width = 4,
+            status = "primary",
+            h3("Model Inputs"),
+          
+            p("Enter model inputs below and then click",
+              strong("Estimate FMR"),
+              "to calculate FMR estimates."),
+            
+            selectInput("species", label = "Select/ Type Species",
+                      choices = species_choices_list),
+            
+            sliderInput("lat", label = "Colony Latitude (north/ south)",
+                      min = 0, max = 90, value = 45),
+            
+            numericInput("mass", label = "Mean Bird Mass (g)",
                    value = 100),
-      
-      selectInput("phase", label = "Select Breeding Phase",
+            
+            selectInput("phase", label = "Select Breeding Phase",
                   choices = list("Incubation",  #  Incubation is the intercept, so doesn't work
                                  "Brood",
                                  "Creche"),
                   selected = 1),
-      
-      actionButton("update" ,"Estimate FMR", icon("spinner"),
-                   class = "btn btn-primary")
-      
-      ),
-    
-#####################################################################   
+            
+            actionButton("update" ,"Estimate FMR", icon("spinner"),
+                   class = "btn btn-primary")),
+            
+            # Box 3 - Model Estimates
+            
+            box(width = 4,
+                
+                textOutput("your_model", h3),
+                textOutput("selected_species"),
+                textOutput("selected_lat"),
+                textOutput("selected_mass"),
+                textOutput("selected_phase"),
+                
+                hr(),
+                
+                textOutput("your_output", h3),
+                textOutput("mode"),
+                textOutput("lower_interval"),
+                textOutput("upper_interval"))
+)))
 
-# Add elements to app:
-# Output functions
-
-    mainPanel(
-      
-      h4("A Model to Estimate Metabolic Rate in Seabirds"),
-      
-      h5("Dunn, R.E., White, C.R., Green, J.A."),
-      
-      p("The",
-        strong("Seabird FMR Calculator"),
-        "is the output of a series of phylogenetically-controlled meta-analytic mixed 
-        effects models. These models incoorporate easily attainable 
-        ecological and physiological parameters in order to make predictions 
-        of FMR for seabird species where this has not previously been calculated."),
-      
-      h4("Your Model:"),
-      
-      textOutput("selected_species"),
-      textOutput("selected_lat"),
-      textOutput("selected_mass"),
-      textOutput("selected_phase"),
-      
-      h4("Your Output:"),
-      
-      textOutput("mode"),
-      textOutput("intervals"),
-      
-      plotOutput("plot")
-      
-    )
-  )
-
+#####################################################################
 #####################################################################
 
 # Define server logic:
 
-server <- function(input, output) {
-  
-  ntext_species <- selected_species <- eventReactive(input$update,{input$n})
+server <- function(input, output) {ntext_species <- selected_species <- eventReactive(input$update,{input$n})
 
-  ntext_lat <- selected_lat <- eventReactive(input$update, {input$n})
+ntext_lat <- selected_lat <- eventReactive(input$update, {input$n})
 
-  ntext_mass <- selected_mass <- eventReactive(input$update, {input$n})
+ntext_mass <- selected_mass <- eventReactive(input$update, {input$n})
 
-  ntext_phase <- selected_phase <- eventReactive(input$update, {input$n})
+ntext_phase <- selected_phase <- eventReactive(input$update, {input$n})
 
-  ntext_mode <- mode <- eventReactive(input$update, {input$n})
+ntext_mode <- mode <- eventReactive(input$update, {input$n})
 
-  ntext_intervals <- intervals <- eventReactive(input$update, {input$n})
-  
-    output$selected_species <- renderText({
-    ntext_species()
-    input$update
-    isolate(paste("You have selected:", input$species))
-  })
-  
-  output$selected_lat <- renderText({
-    ntext_lat()
-    input$update
-    isolate(paste("You have identified a colony latitude of", input$lat, "N/ S"))
-  })
-  
-  output$selected_mass <- renderText({
-    ntext_mass()
-    isolate(paste("You have chosen a mass of", input$mass, "g"))
-  })
-  
-  output$selected_phase <- renderText({
-    ntext_phase()
-    isolate(paste("You have selected breeding phase:", input$phase))
-  })
-    
-  output$mode <-  renderText({
-    ntext_mode()
-    isolate(if(input$phase == "Brood"){
-      paste("Estimate = ",
+ntext_lower_interval <- lower_interval <- eventReactive(input$update, {input$n})
+ntext_upper_interval <- upper_intervatl <- eventReactive(input$update, {input$n})
+
+ntext_model <- your_model <- eventReactive(input$update, {input$n})
+ntext_output <- your_output <- eventReactive(input$update, {input$n})
+
+output$selected_species <- renderText({
+  ntext_species()
+  input$update
+  isolate(paste("You have selected:", input$species))
+})
+
+output$selected_lat <- renderText({
+  ntext_lat()
+  input$update
+  isolate(paste("You have identified a colony latitude of", input$lat, "N/ S"))
+})
+
+output$selected_mass <- renderText({
+  ntext_mass()
+  isolate(paste("You have chosen a mass of", input$mass, "g"))
+})
+
+output$selected_phase <- renderText({
+  ntext_phase()
+  isolate(paste("You have selected breeding phase:", input$phase))
+})
+
+output$your_model <- renderText({
+  ntext_model()
+  isolate("Your Model:")
+})
+
+output$mode <-  renderText({
+  ntext_mode()
+  isolate(if(input$phase == "Brood"){
+    paste("Estimate = ",
           round(10^(posterior.mode(model2.5$Sol[,"(Intercept)"] +
-                           model2.5$Sol[,paste("animal.", input$species, sep = "")] +
-                           input$lat*model2.5$Sol[,"Lat"]+
-                           log10(input$mass)*model2.5$Sol[,"log_Mass"])), digits = 2),
+                                     model2.5$Sol[,paste("animal.", word(input$species,1), "_", word(input$species,2), sep = "")] +
+                                     input$lat*model2.5$Sol[,"Lat"]+
+                                     log10(input$mass)*model2.5$Sol[,"log_Mass"])), digits = 2),
           "kJ/Day")
-    }else{
-      paste("Estimate = ",
-            round(10^(posterior.mode(model2.5$Sol[,"(Intercept)"] +
-                                 model2.5$Sol[,paste("animal.", input$species, sep = "")] +
-                                 input$lat*model2.5$Sol[,"Lat"]+
-                                 log10(input$mass)*model2.5$Sol[,"log_Mass"] +
-                                 model2.5$Sol[,paste("Phase", input$phase, sep = "")])), digits = 2),
-            "kJ/Day")
-    }
+  }else{
+    paste("Estimate = ",
+          round(10^(posterior.mode(model2.5$Sol[,"(Intercept)"] +
+                                     model2.5$Sol[,paste("animal.", word(input$species,1), "_", word(input$species,2), sep = "")] +
+                                     input$lat*model2.5$Sol[,"Lat"]+
+                                     log10(input$mass)*model2.5$Sol[,"log_Mass"] +
+                                     model2.5$Sol[,paste("Phase", input$phase, sep = "")])), digits = 2),
+          "kJ/Day")
+  }
   )})  
-    
-  output$intervals <- renderText({
-    ntext_intervals()
-    isolate(if(input$phase == "Brood"){
-      paste("Confidence interval:",
-          round(10^(HPDinterval(model2.5$Sol[,"(Intercept)"] +
-                        model2.5$Sol[,paste("animal.", input$species, sep = "")] +
-                        input$lat*model2.5$Sol[,"Lat"]+
-                        log10(input$mass)*model2.5$Sol[,"log_Mass"])), digits = 2),
-          "kJ/Day")
-    }else{
-      paste("Confidence interval:",
-           round(10^(HPDinterval(model2.5$Sol[,"(Intercept)"] +
-                              model2.5$Sol[,paste("animal.", input$species, sep = "")] +
-                              input$lat*model2.5$Sol[,"Lat"]+
-                              log10(input$mass)*model2.5$Sol[,"log_Mass"] +
-                              model2.5$Sol[,paste("Phase", input$phase, sep = "")])), digits = 2),
-           "kJ/ Day")
-    }
-    )})
-}
 
+output$your_output <- renderText({
+  ntext_output()
+  isolate(paste("Your Output:"))
+})
+
+output$lower_interval <- renderText({
+  ntext_lower_interval()
+  isolate(if(input$phase == "Brood"){
+    paste("Lower confidence interval:",
+          round(10^(HPDinterval(model2.5$Sol[,"(Intercept)"] +
+                                  model2.5$Sol[,paste("animal.", word(input$species,1), "_", word(input$species,2), sep = "")] +
+                                  input$lat*model2.5$Sol[,"Lat"]+
+                                  log10(input$mass)*model2.5$Sol[,"log_Mass"]))[1], digits = 2),
+          "kJ/Day")
+  }else{
+    paste("Lower confidence interval:",
+          round(10^(HPDinterval(model2.5$Sol[,"(Intercept)"] +
+                                  model2.5$Sol[,paste("animal.", word(input$species,1), "_", word(input$species,2), sep = "")] +
+                                  input$lat*model2.5$Sol[,"Lat"]+
+                                  log10(input$mass)*model2.5$Sol[,"log_Mass"] +
+                                  model2.5$Sol[,paste("Phase", input$phase, sep = "")]))[1], digits = 2),
+          "kJ/ Day")
+  }
+  )})
+
+output$upper_interval <- renderText({
+  ntext_upper_interval()
+  isolate(if(input$phase == "Brood"){
+    paste("Upper confidence interval:",
+          round(10^(HPDinterval(model2.5$Sol[,"(Intercept)"] +
+                                  model2.5$Sol[,paste("animal.", word(input$species,1), "_", word(input$species,2), sep = "")] +
+                                  input$lat*model2.5$Sol[,"Lat"]+
+                                  log10(input$mass)*model2.5$Sol[,"log_Mass"]))[2], digits = 2),
+          "kJ/Day")
+  }else{
+    paste("Upper confidence interval:",
+          round(10^(HPDinterval(model2.5$Sol[,"(Intercept)"] +
+                                  model2.5$Sol[,paste("animal.", word(input$species,1), "_", word(input$species,2), sep = "")] +
+                                  input$lat*model2.5$Sol[,"Lat"]+
+                                  log10(input$mass)*model2.5$Sol[,"log_Mass"] +
+                                  model2.5$Sol[,paste("Phase", input$phase, sep = "")]))[2], digits = 2),
+          "kJ/ Day")
+  }
+  )})}
+
+#####################################################################
+#####################################################################
 
 # Run the app:
 
-shinyApp(ui = ui, server = server)
+shinyApp(ui, server)

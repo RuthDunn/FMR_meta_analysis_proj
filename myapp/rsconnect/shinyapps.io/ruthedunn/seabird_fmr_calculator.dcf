@@ -1,10 +1,12 @@
 name: seabird_fmr_calculator
 title: Seabird FMR Calculator
+username:
 account: ruthedunn
 server: shinyapps.io
+hostUrl: https://api.shinyapps.io/v1
 appId: 256350
-bundleId: 1179703
+bundleId: 1240726
 url: https://ruthedunn.shinyapps.io/seabird_fmr_calculator/
-when: 1516191967.91717
+when: 1519663473.82881
 asMultiple: FALSE
 asStatic: FALSE
