@@ -29,7 +29,7 @@ species_choices_list <- split(species_choices$selector_caption, species_choices$
 
 #
 
-load(file = "data/model2.5.rda")
+load(file = "data/model4.rda")
 
 #####################################################################
 #####################################################################
@@ -57,18 +57,27 @@ ui <- dashboardPage(
             background = "light-blue",
             status = "primary",
             
-            h3("A Model to Estimate Field Metabolic Rate in Seabirds"),
+            h3("A model to estimate seabird field metabolic rates"),
             
             h5("Dunn, R.E., White, C.R., Green, J.A."),
             
             p("The",
             strong("Seabird FMR Calculator"),
-            "is the output of a series of phylogenetically-controlled meta-analytic mixed 
-      effects models. These models incoorporate easily obtainable 
-      ecological and physiological parameters in order to make predictions 
-      of field metabolic rate (FMR) during the breeding season for seabird species
-      of different masses, breeding at different colony latitudes, at different
-      stages of the breeding season.")),
+            "is a web-based app which can be utilised to generate estimates of field metabolic rate (FMR)
+              for any population of breeding seabird.",
+            
+            p("Daily FMR estimates are based on the outputs of a 
+              phylogenetically informed meta-analytical model exploring the large-scale determinants
+              of seabird FMR during the breeding season. The app requires inputs of species, bird mass,
+              colony latitude and breeding phase. In return it generates an estimate of daily FMR alongside
+              HPD confidence intervals.",
+            
+            p("We encourage the use of outputs generated from the",
+            strong("Seabird FMR Calculator"),
+                   "being utilised to complement future behavioural studies and to
+            increase understanding of how energetic demands influence the role of seabirds
+            as driving components of marine systems.
+            ")))),
             
             # Box 2 - Selecting Model Inputs
             
@@ -78,7 +87,7 @@ ui <- dashboardPage(
           
             p("Enter model inputs below and then click",
               strong("Estimate FMR"),
-              "to calculate FMR estimates."),
+              "to generate FMR estimates."),
             
             selectInput("species", label = "Select/ Type Species",
                       choices = species_choices_list),
@@ -168,18 +177,18 @@ output$mode <-  renderText({
   ntext_mode()
   isolate(if(input$phase == "Brood"){
     paste("Estimate = ",
-          round(10^(posterior.mode(model2.5$Sol[,"(Intercept)"] +
-                                     model2.5$Sol[,paste("animal.", word(input$species,1), "_", word(input$species,2), sep = "")] +
-                                     input$lat*model2.5$Sol[,"Lat"]+
-                                     log10(input$mass)*model2.5$Sol[,"log_Mass"])), digits = 2),
+          round(10^(posterior.mode(model4$Sol[,"(Intercept)"] +
+                                     model4$Sol[,paste("animal.", word(input$species,1), "_", word(input$species,2), sep = "")] +
+                                     input$lat*model4$Sol[,"Lat"]+
+                                     log10(input$mass)*model4$Sol[,"log_Mass"])), digits = 2),
           "kJ/Day")
   }else{
     paste("Estimate = ",
-          round(10^(posterior.mode(model2.5$Sol[,"(Intercept)"] +
-                                     model2.5$Sol[,paste("animal.", word(input$species,1), "_", word(input$species,2), sep = "")] +
-                                     input$lat*model2.5$Sol[,"Lat"]+
-                                     log10(input$mass)*model2.5$Sol[,"log_Mass"] +
-                                     model2.5$Sol[,paste("Phase", input$phase, sep = "")])), digits = 2),
+          round(10^(posterior.mode(model4$Sol[,"(Intercept)"] +
+                                     model4$Sol[,paste("animal.", word(input$species,1), "_", word(input$species,2), sep = "")] +
+                                     input$lat*model4$Sol[,"Lat"]+
+                                     log10(input$mass)*model4$Sol[,"log_Mass"] +
+                                     model4$Sol[,paste("Phase", input$phase, sep = "")])), digits = 2),
           "kJ/Day")
   }
   )})  
@@ -193,18 +202,18 @@ output$lower_interval <- renderText({
   ntext_lower_interval()
   isolate(if(input$phase == "Brood"){
     paste("Lower confidence interval:",
-          round(10^(HPDinterval(model2.5$Sol[,"(Intercept)"] +
-                                  model2.5$Sol[,paste("animal.", word(input$species,1), "_", word(input$species,2), sep = "")] +
-                                  input$lat*model2.5$Sol[,"Lat"]+
-                                  log10(input$mass)*model2.5$Sol[,"log_Mass"]))[1], digits = 2),
+          round(10^(HPDinterval(model4$Sol[,"(Intercept)"] +
+                                  model4$Sol[,paste("animal.", word(input$species,1), "_", word(input$species,2), sep = "")] +
+                                  input$lat*model4$Sol[,"Lat"]+
+                                  log10(input$mass)*model4$Sol[,"log_Mass"]))[1], digits = 2),
           "kJ/Day")
   }else{
     paste("Lower confidence interval:",
-          round(10^(HPDinterval(model2.5$Sol[,"(Intercept)"] +
-                                  model2.5$Sol[,paste("animal.", word(input$species,1), "_", word(input$species,2), sep = "")] +
-                                  input$lat*model2.5$Sol[,"Lat"]+
-                                  log10(input$mass)*model2.5$Sol[,"log_Mass"] +
-                                  model2.5$Sol[,paste("Phase", input$phase, sep = "")]))[1], digits = 2),
+          round(10^(HPDinterval(model4$Sol[,"(Intercept)"] +
+                                  model4$Sol[,paste("animal.", word(input$species,1), "_", word(input$species,2), sep = "")] +
+                                  input$lat*model4$Sol[,"Lat"]+
+                                  log10(input$mass)*model4$Sol[,"log_Mass"] +
+                                  model4$Sol[,paste("Phase", input$phase, sep = "")]))[1], digits = 2),
           "kJ/ Day")
   }
   )})
@@ -213,18 +222,18 @@ output$upper_interval <- renderText({
   ntext_upper_interval()
   isolate(if(input$phase == "Brood"){
     paste("Upper confidence interval:",
-          round(10^(HPDinterval(model2.5$Sol[,"(Intercept)"] +
-                                  model2.5$Sol[,paste("animal.", word(input$species,1), "_", word(input$species,2), sep = "")] +
-                                  input$lat*model2.5$Sol[,"Lat"]+
-                                  log10(input$mass)*model2.5$Sol[,"log_Mass"]))[2], digits = 2),
+          round(10^(HPDinterval(model4$Sol[,"(Intercept)"] +
+                                  model4$Sol[,paste("animal.", word(input$species,1), "_", word(input$species,2), sep = "")] +
+                                  input$lat*model4$Sol[,"Lat"]+
+                                  log10(input$mass)*model4$Sol[,"log_Mass"]))[2], digits = 2),
           "kJ/Day")
   }else{
     paste("Upper confidence interval:",
-          round(10^(HPDinterval(model2.5$Sol[,"(Intercept)"] +
-                                  model2.5$Sol[,paste("animal.", word(input$species,1), "_", word(input$species,2), sep = "")] +
-                                  input$lat*model2.5$Sol[,"Lat"]+
-                                  log10(input$mass)*model2.5$Sol[,"log_Mass"] +
-                                  model2.5$Sol[,paste("Phase", input$phase, sep = "")]))[2], digits = 2),
+          round(10^(HPDinterval(model4$Sol[,"(Intercept)"] +
+                                  model4$Sol[,paste("animal.", word(input$species,1), "_", word(input$species,2), sep = "")] +
+                                  input$lat*model4$Sol[,"Lat"]+
+                                  log10(input$mass)*model4$Sol[,"log_Mass"] +
+                                  model4$Sol[,paste("Phase", input$phase, sep = "")]))[2], digits = 2),
           "kJ/ Day")
   }
   )})}
