@@ -40,7 +40,7 @@ load(file = "data/model4.rda")
 
 ui <- dashboardPage(
   
-  skin = "black",
+  # skin = "black",
   
   dashboardHeader(title = "Seabird FMR Calculator",
                   titleWidth = 300),
@@ -54,8 +54,9 @@ ui <- dashboardPage(
             # Box 1 - Title, Authors & Info
             
             box(width = 4,
-            background = "light-blue",
+            # background = "light-blue",
             status = "primary",
+            # tags$style("body{background-color:green}")
             
             h3("A model to estimate seabird field metabolic rates"),
             
@@ -77,7 +78,17 @@ ui <- dashboardPage(
                    "being utilised to complement future behavioural studies and to
             increase understanding of how energetic demands influence the role of seabirds
             as driving components of marine systems.
-            ")))),
+            ",
+            
+            p("For more information please see:",
+              
+            a(href = "http://dx.doi.org/10.1098/rsbl.2018.0190",
+              target = "_blank",
+              title = "Go to Dunn et al 2018",
+              p(strong("R.E. Dunn, C.R. White, J.A. Green."),
+                "(2018) A model to estimate seabird field metabolic rates.",
+                em("Biology Letters,"),
+                "14 (6), p. 20180190."))))))),
             
             # Box 2 - Selecting Model Inputs
             
