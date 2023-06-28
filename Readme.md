@@ -1,7 +1,3 @@
-Analysing the drivers of Field Metabolic Rates (FMR) in breeding seabirds
+Analysis for Dunn, White and Green (2018), "A model to estimate seabird field metabolic rates". https://doi.org/10.1098/rsbl.2018.0190.
 
-We have data on: mass, phase of breeding season, latitude, longitude, animal (phylogenetic position), colony size, species average brood size.
-How do these factors drive seabird FMR during the breeding season?
-
-Published here:
-https://royalsocietypublishing.org/doi/full/10.1098/rsbl.2018.0190
+The ‘Seabird FMR Calculator’ web app is available at https://ruthedunn.shinyapps.io/seabird_fmr_calculator/.
